@@ -120,13 +120,20 @@ func routeRequest(rw http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	GoReleaseVersion, exists := os.LookupEnv("GO_RELEASE_VERSION")
+	if exists {
+		fmt.Println("************ GoReleaseVersion: " + GoReleaseVersion)
+	}
 	_ = sentry.Init(sentry.ClientOptions{
 		Dsn: "https://a4efaa11ca764dd8a91d790c0926f810@sentry.io/1511084",
 		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
 			fmt.Println("************ Before Send ***********")
 			return event
 		},
-		Debug:            true,
+		Release:          GoReleaseVersion,
+		Environment:      "prod",
+		Debug:            false,
 		AttachStacktrace: true,
 	})
 
@@ -140,4 +147,6 @@ func main() {
 	if err := http.ListenAndServe(":3000", c.Handler(handler)); err != nil {
 		panic(err)
 	}
+
+	fmt.Println("Go Server listening on port 3000...")
 }
