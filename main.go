@@ -1,113 +1,124 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"os"
-
-	// "encoding/json"
+	"io/ioutil"
 	"net/http"
-	// "errors"
+	"os"
 
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
+	"github.com/rs/cors"
+	"github.com/ulule/deepcopier"
 )
 
+//Product in the Inventory
 type Product struct {
-	Name  string `json:"Name"`
-	ID    string `json:"Id"`
+	Name  string `json:"name"`
+	ID    string `json:"id"`
 	Count int    `json:"Count"`
 }
 
-type Inventory []Product
-
-var MyInventory Inventory = Inventory{
-	Product{Name: "Wrench", ID: "wrench", Count: 1},
-	Product{Name: "Nalis", ID: "nails", Count: 1},
-	Product{Name: "Hammer", ID: "hammer", Count: 1},
+// MyInventory correlates with the REACT store demo inventory
+var MyInventory = map[string]*Product{
+	"wrench": &Product{Name: "Wrench", ID: "wrench", Count: 1},
+	"nails":  &Product{Name: "Nalis", ID: "nails", Count: 1},
+	"hammer": &Product{Name: "Hammer", ID: "hammer", Count: 1},
 }
 
 func generateRuntimeError(rw http.ResponseWriter, r *http.Request) {
 	//Generate panic [runtime error: index out of range]
-	fmt.Println(MyInventory[3].Name)
+	productIDs := []string{}
+
+	for key := range MyInventory {
+		productIDs = append(productIDs, key)
+	}
+	fmt.Println(productIDs[4])
 }
 
-func handledSentryError(rw http.ResponseWriter, r *http.Request) {
+func generateSentryError(rw http.ResponseWriter, r *http.Request) {
 	_, err := os.Open("filename.ext")
 	if err != nil {
 		sentry.CaptureException(err)
-		//sentry.Flush(time.Second * 5)
 	}
-
-	// event := &sentry.NewEvent()
-	// event.Message = "Hand-crafted event"
-	// event.Extra["runtime.Version"] = runtime.Version()
-	// event.Extra["runtime.NumCPU"] = runtime.NumCPU()
-
-	// sentry.CaptureEvent(event)
 }
 
-func handleCheckout(rw http.ResponseWriter, r *http.Request) {
+func handlCheckout(rw http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		http.Error(rw, err.Error(), 500)
+		return
+	}
 
-	switch r.Method {
-	case "POST":
-		// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
-		if err := r.ParseForm(); err != nil {
-			fmt.Fprintf(rw, "ParseForm() err: %v", err)
-			return
+	var data map[string]interface{}
+	err = json.Unmarshal([]byte(body), &data)
+	if err != nil {
+		panic(err)
+	}
+
+	transactionID := r.Header.Get("X-Transaction-ID")
+	sessionID := r.Header.Get("X-Session-ID")
+
+	sentry.ConfigureScope(func(scope *sentry.Scope) {
+		scope.SetUser(sentry.User{Email: data["email"].(string)})
+		if len(transactionID) > 0 {
+			scope.SetTag("transaction_id", transactionID)
 		}
-		fmt.Fprintf(rw, "whatever...")
+		if len(sessionID) > 0 {
+			scope.SetTag("session-id", sessionID)
+		}
+	})
+
+	tmpInventory := make(map[string]*Product)
+	for k, p := range MyInventory {
+		tmpPrd := &Product{}
+		deepcopier.Copy(p).To(tmpPrd)
+		tmpInventory[k] = tmpPrd
+	}
+
+	cart := data["cart"].([]interface{})
+	var currentPrdID string
+	for _, value := range cart {
+		nestedMap, ok := value.(map[string]interface{})
+		if ok {
+			currentPrdID = nestedMap["id"].(string)
+			if tmpInventory[currentPrdID].Count == 0 {
+				panic("Not enough inventory for " + currentPrdID)
+			} else {
+				tmpInventory[currentPrdID].Count--
+			}
+		}
+	}
+}
+
+func routeRequest(rw http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+
+	case "/unhandled":
+		generateRuntimeError(rw, r)
+
+	case "/handled":
+		generateSentryError(rw, r)
+
+	case "/checkout":
+		if r.Method == "POST" {
+			handlCheckout(rw, r)
+		} else {
+			fmt.Fprintf(rw, "Endpoint supports ony POST method")
+		}
 
 	default:
-		fmt.Fprintf(rw, "Sorry, only POST method is supported.")
+		fmt.Fprintf(rw, "Welcome to Go...")
 	}
-	// body_unicode = request.body.decode('utf-8')
-	// order = json.loads(body_unicode)
-	// cart = order['cart']
-	// process_order(cart)
-	// return Response(InventoryData)
-
 }
-
-// def process_order(cart):
-//     global InventoryData
-//     tempInventory = InventoryData
-//     for item in cart:
-//         itemID = item['id']
-//         inventoryItem = find_in_inventory(itemID)
-//         if inventoryItem['count'] <= 0:
-//             raise Exception("Not enough inventory for " + itemID)
-//         else:
-//             inventoryItem['count'] -= 1
-//             print( 'Success: ' + itemID + ' was purchased, remaining stock is ' + str(inventoryItem['count']) )
-//     InventoryData = tempInventory
 
 func main() {
 	_ = sentry.Init(sentry.ClientOptions{
 		Dsn: "https://a4efaa11ca764dd8a91d790c0926f810@sentry.io/1511084",
 		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
 			fmt.Println("************ Before Send ***********")
-			if hint.Context != nil {
-				if req, ok := hint.Context.Value(sentry.RequestContextKey).(*http.Request); ok {
-					// You have access to the original Request
-					transactionID := req.Header.Get("X-Transaction-ID")
-					sessionID := req.Header.Get("X-Session-ID")
-
-					sentry.ConfigureScope(func(scope *sentry.Scope) {
-						//scope.SetUser(sentry.User{Email: "john.doe@example.com"})
-						if len(transactionID) > 0 {
-							fmt.Println("************ adding transaction ID:" + transactionID)
-							scope.SetTag("transaction_id", transactionID)
-						}
-						if len(sessionID) > 0 {
-							fmt.Println("&&&&&&& adding Session ID: " + sessionID)
-							scope.SetTag("session-id", sessionID)
-						}
-					})
-
-					//fmt.Println(req)
-				}
-			}
-			//fmt.Println(event)
 			return event
 		},
 		Debug:            true,
@@ -118,14 +129,10 @@ func main() {
 		Repanic: true,
 	})
 
-	//http.Handle("/", sentryHandler.Handle(&handler{}))
-	http.HandleFunc("/handled", sentryHandler.HandleFunc(handledSentryError))
-	http.HandleFunc("/unhandled", sentryHandler.HandleFunc(generateRuntimeError))
-	http.HandleFunc("/checkout", sentryHandler.HandleFunc(handleCheckout))
+	c := cors.AllowAll()
+	handler := sentryHandler.HandleFunc(routeRequest)
 
-	fmt.Println("@@@@@@@@@Listening and serving HTTP on :3000")
-
-	if err := http.ListenAndServe(":3000", nil); err != nil {
+	if err := http.ListenAndServe(":3000", c.Handler(handler)); err != nil {
 		panic(err)
 	}
 }
