@@ -3,7 +3,7 @@ SENTRY_ORG=testorg-az
 SENTRY_PROJECT=sentry-go-demo
 VERSION=`sentry-cli releases propose-version`
 
-setup_release: create_release associate_commits upload_sourcemaps
+setup_release: create_release associate_commits
 
 create_release:
 	sentry-cli releases -o $(SENTRY_ORG) new -p $(SENTRY_PROJECT) $(VERSION)
