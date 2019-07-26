@@ -69,8 +69,13 @@ func handlCheckout(rw http.ResponseWriter, r *http.Request) {
 		if len(sessionID) > 0 {
 			scope.SetTag("session-id", sessionID)
 		}
+
+		processOrder(data)
 	})
 
+}
+
+func processOrder(data map[string]interface{}) {
 	tmpInventory := make(map[string]*Product)
 	for k, p := range MyInventory {
 		tmpPrd := &Product{}
