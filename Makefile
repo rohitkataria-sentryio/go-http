@@ -14,8 +14,8 @@ associate_commits:
 	sentry-cli releases -o $(SENTRY_ORG) -p $(SENTRY_PROJECT) set-commits --auto $(GO_RELEASE_VERSION)
 
 build:
-	go build
+	@go build
 
 run:
-	./sentry-go-demo $(GO_RELEASE_VERSION)
+	@./sentry-go-demo $(GO_RELEASE_VERSION)
 

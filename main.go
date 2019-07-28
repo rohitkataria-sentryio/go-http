@@ -149,9 +149,10 @@ func main() {
 	c := cors.AllowAll()
 	handler := sentryHandler.HandleFunc(routeRequest)
 
+	fmt.Println("Go Server listening on port 3000...")
+
 	if err := http.ListenAndServe(":3000", c.Handler(handler)); err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Go Server listening on port 3000...")
 }
