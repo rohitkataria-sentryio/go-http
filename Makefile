@@ -2,7 +2,8 @@
 SENTRY_ORG=testorg-az
 SENTRY_PROJECT=sentry-go-demo
 GO_RELEASE_VERSION=`sentry-cli releases propose-version`
-export GO_RELEASE_VERSION
+
+deploy: setup_release build run
 
 setup_release: create_release associate_commits
 
@@ -11,8 +12,6 @@ create_release:
 
 associate_commits:
 	sentry-cli releases -o $(SENTRY_ORG) -p $(SENTRY_PROJECT) set-commits --auto $(GO_RELEASE_VERSION)
-
-deploy: setup_release build run
 
 build:
 	go build

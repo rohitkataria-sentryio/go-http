@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
@@ -49,33 +50,22 @@ func handlCheckout(rw http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if err != nil {
 		http.Error(rw, err.Error(), 500)
-		return
 	}
 
 	var data map[string]interface{}
 	err = json.Unmarshal([]byte(body), &data)
 	if err != nil {
-		panic(err)
+		http.Error(rw, err.Error(), 500)
 	}
-
-	transactionID := r.Header.Get("X-Transaction-ID")
-	sessionID := r.Header.Get("X-Session-ID")
 
 	sentry.ConfigureScope(func(scope *sentry.Scope) {
 		scope.SetUser(sentry.User{Email: data["email"].(string)})
-		if len(transactionID) > 0 {
-			scope.SetTag("transaction_id", transactionID)
-		}
-		if len(sessionID) > 0 {
-			scope.SetTag("session-id", sessionID)
-		}
-
-		processOrder(data)
+		scope.SetExtra("Cart", data["cart"].([]interface{}))
+		processOrder(data, rw)
 	})
-
 }
 
-func processOrder(data map[string]interface{}) {
+func processOrder(data map[string]interface{}, rw http.ResponseWriter) error {
 	tmpInventory := make(map[string]*Product)
 	for k, p := range MyInventory {
 		tmpPrd := &Product{}
@@ -96,6 +86,7 @@ func processOrder(data map[string]interface{}) {
 			}
 		}
 	}
+	return nil
 }
 
 func routeRequest(rw http.ResponseWriter, r *http.Request) {
@@ -121,19 +112,34 @@ func routeRequest(rw http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	GoReleaseVersion := os.Args[1]
-	fmt.Println("************ GoReleaseVersion: " + GoReleaseVersion)
+	sentrySyncTransport := sentry.NewHTTPSyncTransport()
+	sentrySyncTransport.Timeout = time.Second * 3
 
 	_ = sentry.Init(sentry.ClientOptions{
-		Dsn: "https://a4efaa11ca764dd8a91d790c0926f810@sentry.io/1511084",
-		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-			fmt.Println("************ Before Send ***********")
-			return event
-		},
-		Release:          GoReleaseVersion,
+		Dsn:              "https://a4efaa11ca764dd8a91d790c0926f810@sentry.io/1511084",
+		Transport:        sentrySyncTransport,
+		Release:          os.Args[1],
 		Environment:      "prod",
 		Debug:            false,
 		AttachStacktrace: true,
+		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+			if hint.Context != nil {
+				if req, ok := hint.Context.Value(sentry.RequestContextKey).(*http.Request); ok {
+					// You have access to the original Request here
+					sentry.ConfigureScope(func(scope *sentry.Scope) {
+						transactionID := req.Header.Get("X-Transaction-ID")
+						sessionID := req.Header.Get("X-Session-ID")
+						if len(transactionID) > 0 {
+							scope.SetTag("transaction_id", transactionID)
+						}
+						if len(sessionID) > 0 {
+							scope.SetTag("session-id", sessionID)
+						}
+					})
+				}
+			}
+			return event
+		},
 	})
 
 	sentryHandler := sentryhttp.New(sentryhttp.Options{
