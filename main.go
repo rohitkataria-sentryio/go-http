@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
@@ -112,12 +111,8 @@ func routeRequest(rw http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	sentrySyncTransport := sentry.NewHTTPSyncTransport()
-	sentrySyncTransport.Timeout = time.Second * 3
-
 	_ = sentry.Init(sentry.ClientOptions{
 		Dsn:              "https://a4efaa11ca764dd8a91d790c0926f810@sentry.io/1511084",
-		Transport:        sentrySyncTransport,
 		Release:          os.Args[1],
 		Environment:      "prod",
 		Debug:            false,
