@@ -44,7 +44,7 @@ func generateSentryError(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handlCheckout(rw http.ResponseWriter, r *http.Request) {
+func handleCheckout(rw http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -99,7 +99,7 @@ func routeRequest(rw http.ResponseWriter, r *http.Request) {
 
 	case "/checkout":
 		if r.Method == "POST" {
-			handlCheckout(rw, r)
+			handleCheckout(rw, r)
 		} else {
 			fmt.Fprintf(rw, "Endpoint supports ony POST method")
 		}
