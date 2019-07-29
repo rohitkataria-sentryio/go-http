@@ -27,4 +27,5 @@ The HTTP Server offers 3 API endpoints:
 2. http://localhost:8000/unhandled - generates an unhadled panic (Runtime error) reported to Sentry
 3. http://localhost:8000/checkout - is used with the [Sentry REACT demo store front demo](https://github.com/sentry-demos/react)
 
+## GIF
 ![Sentry Go demo in action](sentry-go-demo.gif)
