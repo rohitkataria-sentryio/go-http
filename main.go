@@ -164,12 +164,13 @@ func main() {
 		//SampleRate: 0.8,
 		//IgnoreErrors: []string{"MyIOError", "MyDBError"},
 		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-			// if hint.Context != nil {
-			// 	if req, ok := hint.Context.Value(sentry.RequestContextKey).(*http.Request); ok {
-			// 		// You have access to the original Request
-			// 		fmt.Println(req)
-			// 	}
-			// }
+			fmt.Println("****** Sentry captured event: " + event.EventID + " ******")
+			if hint.Context != nil {
+				// if req, ok := hint.Context.Value(sentry.RequestContextKey).(*http.Request); ok {
+				// 	// You have access to the original Request
+				// 	fmt.Println(req)
+				// }
+			}
 			return event
 		},
 	})

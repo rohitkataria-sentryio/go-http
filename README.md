@@ -8,20 +8,9 @@
 
 ## Setup & Build
 
-Clone this repo and cd into the directory:
-
-```
-    git clone https://github.com/idosun/sentry-go.git
-    cd sentry-go
-```
-
-To build the binary `sentry-go-demo`, create a new release, assign git commits and start the server run
-
-```
-    make deploy
-```
-
-The Go HTTP Server will be available on  `http://localhost:3002`
+- Clone this repo and cd into the directory
+- Run `make deploy` to build the binary `sentry-go-demo`, create a new release, assign git commits and start the server run
+- The Go HTTP Server will be available on `http://localhost:3002`
 
 ## Demo Specs
 
@@ -32,7 +21,5 @@ The HTTP Server offers 4 API endpoints:
 2. http://localhost:3002/unhandled - generates an unhandled panic (Runtime error) reported to Sentry
 3. http://localhost:3002/checkout - is used with the [Sentry REACT demo store front demo](https://github.com/sentry-demos/react)
 4. http://localhost:3002/message - send a message via `hub.captureMessage()` - note the `AttachStacktrace` client configuration options attaches a stack-trace to the message event.
-
-
 
 ![Sentry Go demo in action](sentry-go-demo.gif)
