@@ -1,21 +1,24 @@
 # sentry-go
 
 ## Requirements
-- Download and install Go to build and run this project, for more infomration checkout: 
+
+- Download and install Go to build and run this project, for more information checkout:
 [Getting Started](https://golang.org/doc/install)
 - There is **no need to define any Go environment variables** as the project uses [Go Modules](https://github.com/golang/go/wiki/Modules) for packaging
 
 ## Setup & Build
+
 Clone this repo and cd into the directory:
 
 ```
-git clone https://github.com/idosun/sentry-go.git
-cd sentry-go
+    git clone https://github.com/idosun/sentry-go.git
+    cd sentry-go
 ```
 
 To build the binary `sentry-go-demo`, create a new release, assign git commits and start the server run
+
 ```
-make deploy
+    make deploy
 ```
 
 The Go HTTP Server will be available on  `http://localhost:3000` 
