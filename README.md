@@ -2,8 +2,7 @@
 
 ## Requirements
 
-- Download and install Go to build and run this project, for more information checkout:
-[Getting Started](https://golang.org/doc/install)
+- Download and install Go to build and run this project, for more infomration checkout: [Getting Started](https://golang.org/doc/install)
 - There is **no need to define any Go environment variables** as the project uses [Go Modules](https://github.com/golang/go/wiki/Modules) for packaging
 
 ## Setup & Build
