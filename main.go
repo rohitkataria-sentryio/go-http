@@ -13,6 +13,8 @@ import (
 	"github.com/ulule/deepcopier"
 )
 
+// test suspect commits 1
+
 //Product in the Inventory
 type Product struct {
 	Name  string `json:"name"`
