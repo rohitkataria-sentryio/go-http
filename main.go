@@ -4,13 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
+	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 	"github.com/ulule/deepcopier"
+)
+
+var (
+	DSN string
 )
 
 // test suspect commits 1
@@ -111,10 +117,19 @@ func routeRequest(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func main() {
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Print("No .env file found")
+	}
+	if DSN = os.Getenv("DSN"); DSN == "" {
+		DSN = "https://a4efaa11ca764dd8a91d790c0926f810@sentry.io/1511084"
+	}
+	fmt.Println("DSN", DSN)
+}
 
+func main() {
 	_ = sentry.Init(sentry.ClientOptions{
-		Dsn:              "https://a4efaa11ca764dd8a91d790c0926f810@sentry.io/1511084",
+		Dsn:              DSN,
 		Release:          os.Args[1],
 		Environment:      "prod",
 		Debug:            false,
