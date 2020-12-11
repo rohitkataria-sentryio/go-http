@@ -105,6 +105,9 @@ func routeRequest(rw http.ResponseWriter, r *http.Request) {
 	case "/handled":
 		generateSentryError(rw, r)
 
+	case "/success":
+		success(rw, r)
+
 	case "/checkout":
 		if r.Method == "POST" {
 			handleCheckout(rw, r)
@@ -115,6 +118,10 @@ func routeRequest(rw http.ResponseWriter, r *http.Request) {
 	default:
 		fmt.Fprintf(rw, "Welcome to Go...")
 	}
+}
+
+func success(rw http.ResponseWriter, r *http.Request) {
+	rw.Write([]byte("success"))
 }
 
 func init() {
@@ -155,6 +162,7 @@ func main() {
 		},
 		// Specify either TracesSampleRate or set a TracesSampler to enable tracing.
 		TracesSampleRate: 1.0,
+		// TODO - try logging just the name
 		/*TracesSampler: sentry.TracesSamplerFunc(func(ctx sentry.SamplingContext) sentry.Sampled {
 			// As an example, this custom sampler does not send some
 			// transactions to Sentry based on their name.
