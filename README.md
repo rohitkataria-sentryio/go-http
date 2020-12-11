@@ -23,8 +23,8 @@ The Go HTTP Server will be available on  `http://localhost:3000`
 ## Demo Specs
 
 The HTTP Server offers 3 API endpoints:
-1. http://localhost:8000/handled - generates a runtime error excplicitly reported to Sentry though the SDk's captureException
-2. http://localhost:8000/unhandled - generates an unhadled panic (Runtime error) reported to Sentry
+1. http://localhost:8000/handled - generates a runtime error excplicitly reported to Sentry though the SDk's captureException. level:error
+2. http://localhost:8000/unhandled - generates an unhadled panic (Runtime error) reported to Sentry. level:fatal
 3. http://localhost:8000/checkout - is used with the [Sentry REACT demo store front demo](https://github.com/sentry-demos/react)
 
 ## GIF
