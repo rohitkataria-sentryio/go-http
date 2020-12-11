@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
@@ -160,33 +161,37 @@ func main() {
 			log.Printf("BeforeSend event [%s]", event.EventID)
 			return event
 		},
-		// Specify either TracesSampleRate or set a TracesSampler to enable tracing.
-		TracesSampleRate: 1.0,
-		// TODO - try logging just the name
-		/*TracesSampler: sentry.TracesSamplerFunc(func(ctx sentry.SamplingContext) sentry.Sampled {
-			// As an example, this custom sampler does not send some
-			// transactions to Sentry based on their name.
+		/** Specify either TracesSampleRate or set a TracesSampler to enable tracing. **/
+		// TracesSampleRate: 1.0,
+		TracesSampler: sentry.TracesSamplerFunc(func(ctx sentry.SamplingContext) sentry.Sampled {
+			// As an example, this custom sampler does not send some transactions to Sentry based on their name.
 			hub := sentry.GetHubFromContext(ctx.Span.Context())
 			name := hub.Scope().Transaction()
+			fmt.Println("transaction:", name)
+
 			if name == "GET /favicon.ico" {
 				return sentry.SampledFalse
 			}
+
+			// ignore pre-flight requests
+			if strings.HasPrefix(name, "OPTIONS") {
+				return sentry.SampledFalse
+			}
+
 			// if strings.HasPrefix(name, "HEAD") {
 			// 	return sentry.SampledFalse
 			// }
 
-			// As an example, sample some transactions with a
-			// uniform rate.
+			// As an example, sample some transactions with a uniform rate.
 			// if strings.HasPrefix(name, "POST") {
 			// 	return sentry.UniformTracesSampler(0.2).Sample(ctx)
 			// }
 
-			// Sample all other transactions for testing. On
-			// production, use TracesSampleRate with a rate adequate
-			// for your traffic, or use the SamplingContext to
+			// On production, use TracesSampleRate with a rate adequate for your traffic,
+			//  or use the SamplingContext to
 			// customize sampling per-transaction.
 			return sentry.SampledTrue
-		}),*/
+		}),
 	})
 
 	sentryHandler := sentryhttp.New(sentryhttp.Options{
