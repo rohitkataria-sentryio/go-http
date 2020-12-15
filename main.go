@@ -4,14 +4,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
+	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 	"github.com/ulule/deepcopier"
 )
+
+var (
+	DSN string
+)
+
+// test suspect commits 1
 
 //Product in the Inventory
 type Product struct {
@@ -153,12 +162,50 @@ func processOrder(data map[string]interface{}, rw http.ResponseWriter) error {
 	return nil
 }
 
-func main() {
+func routeRequest(rw http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
 
+	case "/unhandled":
+		generateRuntimeError(rw, r)
+
+	case "/handled":
+		generateSentryError(rw, r)
+
+	case "/success":
+		success(rw, r)
+
+	case "/checkout":
+		if r.Method == "POST" {
+			handleCheckout(rw, r)
+		} else {
+			fmt.Fprintf(rw, "Endpoint supports ony POST method")
+		}
+
+	default:
+		fmt.Fprintf(rw, "Welcome to Go...")
+	}
+}
+
+func success(rw http.ResponseWriter, r *http.Request) {
+	rw.Write([]byte("success"))
+}
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Print("No .env file found")
+	}
+	if DSN = os.Getenv("DSN"); DSN == "" {
+		DSN = "https://a4efaa11ca764dd8a91d790c0926f810@sentry.io/1511084"
+	}
+	fmt.Println("DSN", DSN)
+}
+
+func main() {
 	_ = sentry.Init(sentry.ClientOptions{
-		Dsn:              "https://a4efaa11ca764dd8a91d790c0926f810@sentry.io/1511084",
+		Dsn:              DSN,
 		Release:          os.Args[1],
 		Environment:      "prod",
+		Debug:            true,
 		AttachStacktrace: true,
 		ServerName:       "SE1.US.EAST",
 		//Debug:       false,
@@ -172,8 +219,40 @@ func main() {
 				// 	fmt.Println(req)
 				// }
 			}
+			log.Printf("BeforeSend event [%s]", event.EventID)
 			return event
 		},
+		/** Specify either TracesSampleRate or set a TracesSampler to enable tracing. **/
+		// TracesSampleRate: 1.0,
+		TracesSampler: sentry.TracesSamplerFunc(func(ctx sentry.SamplingContext) sentry.Sampled {
+			// As an example, this custom sampler does not send some transactions to Sentry based on their name.
+			hub := sentry.GetHubFromContext(ctx.Span.Context())
+			name := hub.Scope().Transaction()
+			fmt.Println("transaction:", name)
+
+			if name == "GET /favicon.ico" {
+				return sentry.SampledFalse
+			}
+
+			// ignore pre-flight requests
+			if strings.HasPrefix(name, "OPTIONS") {
+				return sentry.SampledFalse
+			}
+
+			// if strings.HasPrefix(name, "HEAD") {
+			// 	return sentry.SampledFalse
+			// }
+
+			// As an example, sample some transactions with a uniform rate.
+			// if strings.HasPrefix(name, "POST") {
+			// 	return sentry.UniformTracesSampler(0.2).Sample(ctx)
+			// }
+
+			// On production, use TracesSampleRate with a rate adequate for your traffic,
+			//  or use the SamplingContext to
+			// customize sampling per-transaction.
+			return sentry.SampledTrue
+		}),
 	})
 
 	sentryHandler := sentryhttp.New(sentryhttp.Options{

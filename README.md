@@ -15,10 +15,9 @@
 
 The demo initializes Sentry SDK through the Sentry Client and then uses the [net/http](https://docs.sentry.io/platforms/go/http/) integration to attach a Sentry handler for all endpoint requests.
 The HTTP Server offers 4 API endpoints:
-
-1. http://localhost:3002/handled - generates a runtime error explicitly reported to the Sentry Handler though `hub.captureException`
-2. http://localhost:3002/unhandled - generates an unhandled panic (Runtime error) reported to Sentry
-3. http://localhost:3002/checkout - is used with the [Sentry REACT demo store front demo](https://github.com/sentry-demos/react)
-4. http://localhost:3002/message - send a message via `hub.captureMessage()` - note the `AttachStacktrace` client configuration options attaches a stack-trace to the message event.
+1. http://localhost:3000/handled - generates a runtime error excplicitly reported to Sentry though the SDk's captureException. level:error
+2. http://localhost:3000/unhandled - generates an unhadled panic (Runtime error) reported to Sentry. level:fatal
+3. http://localhost:3000/checkout - is used with the [Sentry REACT demo store front demo](https://github.com/sentry-demos/react)
+4. http://localhost:3000/success - is for generating a Transaction
 
 ![Sentry Go demo in action](sentry-go-demo.gif)
