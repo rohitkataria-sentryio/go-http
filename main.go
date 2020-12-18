@@ -207,7 +207,6 @@ func main() {
 		Debug:            true,
 		AttachStacktrace: true,
 		ServerName:       "ServerName",
-		SampleRate:       1.0, // TODO test
 		IgnoreErrors:     []string{"MyIOError", "MyDBError"},
 		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
 			fmt.Println(event.EventID)
@@ -277,5 +276,5 @@ type DatabaseConnectionError struct {
 }
 
 func (e DatabaseConnectionError) Error() string {
-	return "CustomComplexError: " + e.Message
+	return "DatabaseConnectionError: " + e.Message
 }
