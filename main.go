@@ -104,7 +104,6 @@ func generateSentryError(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func sendSentryCaptureMessage(rw http.ResponseWriter, r *http.Request) {
 	if hub := sentry.GetHubFromContext(r.Context()); hub != nil {
 		hub.CaptureMessage("Send this message to Sentry")
@@ -207,19 +206,21 @@ func main() {
 		Environment:      "prod",
 		Debug:            true,
 		AttachStacktrace: true,
-		ServerName:       "SE1.US.EAST",
-		//Debug:       false,
-		//SampleRate: 0.8,
-		//IgnoreErrors: []string{"MyIOError", "MyDBError"},
+		ServerName:       "ServerName",
+		SampleRate:       1.0, // TODO test
+		IgnoreErrors:     []string{"MyIOError", "MyDBError"},
 		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-			fmt.Println("****** Sentry captured event: " + event.EventID + " ******")
+			fmt.Println(event.EventID)
 			if hint.Context != nil {
 				// if req, ok := hint.Context.Value(sentry.RequestContextKey).(*http.Request); ok {
 				// 	// You have access to the original Request
 				// 	fmt.Println(req)
 				// }
 			}
-			log.Printf("BeforeSend event [%s]", event.EventID)
+
+			if _, ok := hint.OriginalException.(DatabaseConnectionError); ok {
+				event.Fingerprint = []string{"database-connection-error"}
+			}
 			return event
 		},
 		/** Specify either TracesSampleRate or set a TracesSampler to enable tracing. **/
@@ -269,4 +270,12 @@ func main() {
 		panic(err)
 	}
 
+}
+
+type DatabaseConnectionError struct {
+	Message string
+}
+
+func (e DatabaseConnectionError) Error() string {
+	return "CustomComplexError: " + e.Message
 }
