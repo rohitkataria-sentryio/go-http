@@ -53,7 +53,6 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointRequest := r.URL.Path
-
 	sentry.AddBreadcrumb(&sentry.Breadcrumb{
 		Category: "Network",
 		Message:  "Processing request for endpoint: " + endpointRequest,
@@ -76,6 +75,9 @@ func (h *handler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		} else {
 			fmt.Fprintf(rw, "Endpoint supports only POST method")
 		}
+
+	case "/success":
+		success(rw, r)
 
 	case "/favicon.ico":
 		http.ServeFile(rw, r, "static/favicon.ico")
@@ -161,30 +163,6 @@ func processOrder(data map[string]interface{}, rw http.ResponseWriter) error {
 	return nil
 }
 
-func routeRequest(rw http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-
-	case "/unhandled":
-		generateRuntimeError(rw, r)
-
-	case "/handled":
-		generateSentryError(rw, r)
-
-	case "/success":
-		success(rw, r)
-
-	case "/checkout":
-		if r.Method == "POST" {
-			handleCheckout(rw, r)
-		} else {
-			fmt.Fprintf(rw, "Endpoint supports ony POST method")
-		}
-
-	default:
-		fmt.Fprintf(rw, "Welcome to Go...")
-	}
-}
-
 func success(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte("success"))
 }
@@ -210,19 +188,21 @@ func main() {
 		IgnoreErrors:     []string{"MyIOError", "MyDBError"},
 		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
 			fmt.Println(event.EventID)
-			if hint.Context != nil {
-				// if req, ok := hint.Context.Value(sentry.RequestContextKey).(*http.Request); ok {
-				// 	// You have access to the original Request
-				// 	fmt.Println(req)
-				// }
-			}
 
-			if _, ok := hint.OriginalException.(DatabaseConnectionError); ok {
-				event.Fingerprint = []string{"database-connection-error"}
-			}
+			// Fingerprinting - this updates the fingerprint for the error produced by /handled endpoint
+			// if ex, _ := hint.OriginalException.(OpenFileError); ex.Error() == "open filename.ext: no such file or directory" {
+			// 	event.Fingerprint = []string{"open-file-error"}
+			// }
+
+			// if hint.Context != nil {
+			// if req, ok := hint.Context.Value(sentry.RequestContextKey).(*http.Request); ok {
+			// 	// You have access to the original Request object
+			// 	fmt.Println(req)
+			// }
+			// }
 			return event
 		},
-		/** Specify either TracesSampleRate or set a TracesSampler to enable tracing. **/
+		// Specify either TracesSampleRate or set a TracesSampler to enable tracing
 		// TracesSampleRate: 1.0,
 		TracesSampler: sentry.TracesSamplerFunc(func(ctx sentry.SamplingContext) sentry.Sampled {
 			// As an example, this custom sampler does not send some transactions to Sentry based on their name.
@@ -258,23 +238,20 @@ func main() {
 	sentryHandler := sentryhttp.New(sentryhttp.Options{
 		Repanic: true,
 	})
-
 	c := cors.AllowAll()
-
 	http.Handle("/", c.Handler(sentryHandler.Handle(c.Handler(&handler{}))))
-
-	fmt.Println("Go Server listening on port 3002...")
-
-	if err := http.ListenAndServe(":3002", nil); err != nil {
+	fmt.Println("Go Server listening on port 3000...")
+	if err := http.ListenAndServe(":3000", nil); err != nil {
 		panic(err)
 	}
 
 }
 
-type DatabaseConnectionError struct {
+type OpenFileError struct {
 	Message string
 }
 
-func (e DatabaseConnectionError) Error() string {
-	return "DatabaseConnectionError: " + e.Message
+func (e OpenFileError) Error() string {
+	return "open filename.ext: no such file or directory"
+	// return "OpenFileError: " + e.Message
 }
