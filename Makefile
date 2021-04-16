@@ -1,6 +1,6 @@
 
 SENTRY_ORG=testorg-az
-SENTRY_PROJECT=sentry-go-demo
+SENTRY_PROJECT=rk-go
 GO_RELEASE_VERSION=`sentry-cli releases propose-version`
 
 deploy: build setup_release run
