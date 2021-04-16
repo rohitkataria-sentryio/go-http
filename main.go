@@ -172,7 +172,7 @@ func init() {
 		log.Print("No .env file found")
 	}
 	if DSN = os.Getenv("DSN"); DSN == "" {
-		DSN = "https://a4efaa11ca764dd8a91d790c0926f810@sentry.io/1511084"
+		DSN = "https://b3d031eea696421a899b78549349e888@o87286.ingest.sentry.io/5722093"
 	}
 	fmt.Println("DSN", DSN)
 }
